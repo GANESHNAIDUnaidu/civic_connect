@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head>
+    <title>Admin Dashboard - CivicConnect</title>
+</head>
+<body>
+    <div layout:fragment="content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</h2>
+            <div class="text-end">
+                <span class="badge bg-primary">Welcome, <span th:text="${user.fullName}"></span>!</span>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary">
+                    <div class="card-body text-center">
+                        <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
+                        <h5 th:text="${totalIssueCount}">0</h5>
+                        <p class="mb-0">Total Issues</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning">
+                    <div class="card-body text-center">
+                        <i class="fas fa-clock fa-2x mb-2"></i>
+                        <h5 th:text="${newIssueCount}">0</h5>
+                        <p class="mb-0">New Issues</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info">
+                    <div class="card-body text-center">
+                        <i class="fas fa-cogs fa-2x mb-2"></i>
+                        <h5 th:text="${inProgressIssueCount}">0</h5>
+                        <p class="mb-0">In Progress</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body text-center">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <h5 th:text="${resolvedIssueCount}">0</h5>
+                        <p class="mb-0">Resolved</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-list me-2"></i>All Issues</h5>
+                <div>
+                    <select class="form-select d-inline-block w-auto me-2" id="statusFilter">
+                        <option value="">All Statuses</option>
+                        <option value="NEW">New</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="RESOLVED">Resolved</option>
+                    </select>
+                    <select class="form-select d-inline-block w-auto" id="categoryFilter">
+                        <option value="">All Categories</option>
+                        <option th:each="cat : ${allCategories}" 
+                                th:value="${cat}" 
+                                th:text="${cat}"></option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body">
+                <div th:if="${#lists.isEmpty(issues)}" class="text-center py-4">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No issues reported yet</h5>
+                </div>
+
+                <div th:unless="${#lists.isEmpty(issues)}" class="table-responsive">
+                    <table class="table table-striped" id="issuesTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Citizen</th>
+                                <th>Date Reported</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="issue : ${issues}" 
+                                th:data-status="${issue.status}" 
+                                th:data-category="${issue.category}">
+                                <td th:text="${issue.id}">#</td>
+                                <td>
+                                    <a th:href="@{/issues/{id}(id=${issue.id})}" th:text="${issue.title}"></a>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary" th:text="${issue.category}"></span>
+                                </td>
+                                <td th:switch="${issue.status}">
+                                    <span th:case="'NEW'" class="badge bg-warning" th:text="${issue.status}"></span>
+                                    <span th:case="'IN_PROGRESS'" class="badge bg-info" th:text="${issue.status}"></span>
+                                    <span th:case="'RESOLVED'" class="badge bg-success" th:text="${issue.status}"></span>
+                                    <span th:case="*" class="badge bg-secondary" th:text="${issue.status}"></span>
+                                </td>
+                                <td th:text="${issue.citizen.fullName}"></td>
+                                <td th:text="${#temporals.format(issue.createdAt, 'MMM dd, yyyy')}"></td>
+                                <td>
+                                    <a th:href="@{/issues/{id}(id=${issue.id})}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <th:block layout:fragment="scripts">
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const statusFilter = document.getElementById('statusFilter');
+                const categoryFilter = document.getElementById('categoryFilter');
+                const table = document.getElementById('issuesTable');
+                
+                // Add null check for table
+                if (!table) return; 
+                
+                const rows = table.querySelectorAll('tbody tr');
+                
+                function filterTable() {
+                    const statusValue = statusFilter.value.toLowerCase();
+                    const categoryValue = categoryFilter.value.toLowerCase();
+                    
+                    rows.forEach(row => {
+                        // FIX 3: Use robust data-attributes
+                        const statusCell = row.dataset.status.toLowerCase();
+                        const categoryCell = row.dataset.category.toLowerCase();
+                        
+                        const statusMatch = !statusValue || statusCell.includes(statusValue);
+                        const categoryMatch = !categoryValue || categoryCell.includes(categoryValue);
+                        
+                        row.style.display = statusMatch && categoryMatch ? '' : 'none';
+                    });
+                }
+                
+                statusFilter.addEventListener('change', filterTable);
+                categoryFilter.addEventListener('change', filterTable);
+            });
+        </script>
+    </th:block>
+</body>
+</html>

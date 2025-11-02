@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head>
+    <title>Register - CivicConnect</title>
+</head>
+<body>
+    <div layout:fragment="content">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white text-center">
+                        <h3><i class="fas fa-user-plus me-2"></i>Create Account</h3>
+                    </div>
+                    <div class="card-body">
+                        
+                        <form th:action="@{/register}" th:object="${user}" method="post" id="registerForm">
+                        
+                            <div th:if="${#fields.hasErrors('all')}" class="alert alert-danger">
+                                <ul class="mb-0">
+                                    <li th:each="err : ${#fields.errors('all')}" th:text="${err}" />
+                                </ul>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="fullName" class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" id="fullName" th:field="*{fullName}" required
+                                           autocomplete="name"
+                                           th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid' : ''">
+                                    <div th:if="${#fields.hasErrors('fullName')}" class="invalid-feedback">
+                                        <span th:errors="*{fullName}"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="username" class="form-label">Username</label>
+                                    <input type="text" class="form-control" id="username" th:field="*{username}" required
+                                           autocomplete="username"
+                                           th:classappend="${#fields.hasErrors('username')} ? 'is-invalid' : ''">
+                                    <div th:if="${#fields.hasErrors('username')}" class="invalid-feedback">
+                                        <span th:errors="*{username}"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" th:field="*{email}" required
+                                       autocomplete="email"
+                                       th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''">
+                                <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback">
+                                    <span th:errors="*{email}"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="password" class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="password" th:field="*{password}" required
+                                           autocomplete="new-password"
+                                           th:classappend="${#fields.hasErrors('password')} ? 'is-invalid' : ''">
+                                    <div th:if="${#fields.hasErrors('password')}" class="invalid-feedback">
+                                        <span th:errors="*{password}"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="confirmPassword" class="form-label">Confirm Password</label>
+                                    <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required
+                                           autocomplete="new-password">
+                                    <div class="invalid-feedback" id="passwordMatchError">
+                                        Passwords do not match.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success">Register</button>
+                            </div>
+                        </form>
+                        <div class="text-center mt-3">
+                            <p>Already have an account? <a th:href="@{/login}">Login here</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <th:block layout:fragment="scripts">
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const registerForm = document.getElementById('registerForm');
+                const password = document.getElementById('password');
+                const confirmPassword = document.getElementById('confirmPassword');
+                const passwordMatchError = document.getElementById('passwordMatchError');
+
+                registerForm.addEventListener('submit', function(event) {
+                    if (password.value !== confirmPassword.value) {
+                        event.preventDefault();
+                        confirmPassword.classList.add('is-invalid');
+                        passwordMatchError.style.display = 'block';
+                    } else {
+                        confirmPassword.classList.remove('is-invalid');
+                        passwordMatchError.style.display = 'none';
+                    }
+                });
+            });
+        </script>
+    </th:block>
+</body>
+</html>

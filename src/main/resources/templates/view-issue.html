@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" 
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" 
+      layout:decorate="~{layout}">
+<head>
+    <title th:text="${issue.title} + ' - Issue Details'">Issue Details</title>
+</head>
+<body>
+    <div layout:fragment="content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-exclamation-circle me-2"></i>Issue Details</h2>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0" th:text="${issue.title}"></h5>
+                
+                <div th:switch="${issue.status}">
+                    <span th:case="'NEW'" class="badge bg-warning" th:text="${issue.status}"></span>
+                    <span th:case="'IN_PROGRESS'" class="badge bg-info" th:text="${issue.status}"></span>
+                    <span th:case="'RESOLVED'" class="badge bg-success" th:text="${issue.status}"></span>
+                    <span th:case="*" class="badge bg-secondary" th:text="${issue.status}"></span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <p class="card-text" th:if="${issue.description}" th:utext="${#strings.replace(issue.description, '\n', '<br />')}"></p>
+                        <p class="card-text" th:unless="${issue.description}"><em>No description provided.</em></p>
+                    </div>
+                    <div class="col-md-4">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                <strong>Category:</strong> 
+                                <span class="badge bg-secondary" th:text="${issue.category}"></span>
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Reported by:</strong> 
+                                <span th:text="${issue.citizen.fullName}"></span>
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Date Reported:</strong> 
+                                <span th:text="${#temporals.format(issue.createdAt, 'MMM dd, yyyy HH:mm')}"></span>
+                            </li>
+                            <li class="list-group-item" th:if="${issue.resolvedAt}">
+                                <strong>Resolved on:</strong> 
+                                <span th:text="${#temporals.format(issue.resolvedAt, 'MMM dd, yyyy HH:mm')}"></span>
+                            </li>
+                            <li class="list-group-item" th:if="${issue.assignedAdmin}">
+                                <strong>Assigned to:</strong> 
+                                <span th:text="${issue.assignedAdmin.fullName}"></span>
+                            </li>
+                            <li class="list-group-item" th:if="${issue.latitude != null and issue.longitude != null}">
+                                <strong>Location:</strong>
+                                <a th:href="'http://googleusercontent.com/maps/google.com/search/api=1&query=' + ${issue.latitude} + ',' + ${issue.longitude}"
+                                   target="_blank"
+                                   th:text="${issue.latitude + ', ' + issue.longitude}">
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div th:if="${showRatingForm}" class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-star me-2"></i>Rate this Resolution</h5>
+            </div>
+            <div class="card-body">
+                <form th:action="@{/dashboard/rate-issue/{issueId}(issueId=${issue.id})}" method="post">
+                    <div class="mb-3">
+                         <label class="form-label">How would you rate the resolution?</label>
+                         <div class="d-flex">
+                             <div class="form-check me-3">
+                                 <input class="form-check-input" type="radio" name="rating" id="rating1" value="1" required>
+                                 <label class="form-check-label" for="rating1">1 <i class="fas fa-star text-warning"></i></label>
+                             </div>
+                             <div class="form-check me-3">
+                                 <input class="form-check-input" type="radio" name="rating" id="rating2" value="2">
+                                 <label class="form-check-label" for="rating2">2 <i class="fas fa-star text-warning"></i></label>
+                             </div>
+                             <div class="form-check me-3">
+                                 <input class="form-check-input" type="radio" name="rating" id="rating3" value="3">
+                                 <label class="form-check-label" for="rating3">3 <i class="fas fa-star text-warning"></i></label>
+                             </div>
+                             <div class="form-check me-3">
+                                 <input class="form-check-input" type="radio" name="rating" id="rating4" value="4">
+                                 <label class="form-check-label" for="rating4">4 <i class="fas fa-star text-warning"></i></label>
+                             </div>
+                             <div class="form-check">
+                                 <input class="form-check-input" type="radio" name="rating" id="rating5" value="5">
+                                 <label class="form-check-label" for="rating5">5 <i class="fas fa-star text-warning"></i></label>
+                             </div>
+                         </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="comment" class="form-label">Additional Comments (Optional)</label>
+                        <textarea class="form-control" id="comment" name="comment" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-paper-plane me-1"></i>Submit Rating
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div th:if="${issue.rating != null}" class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-star-half-alt me-2"></i>Citizen Feedback</h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    
+                    <div class="col-md-4 text-center border-end">
+                        <h4 class="mb-0">Rating: <span th:text="${issue.rating.rating} + ' / 5'"></span></h4>
+                        <div class="fs-4">
+                            <span th:each="i : ${#numbers.sequence(1, issue.rating.rating)}" class="fas fa-star text-warning"></span>
+                            <span th:if="${issue.rating.rating < 5}" th:each="i : ${#numbers.sequence(issue.rating.rating + 1, 5)}" class="far fa-star text-warning"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <h6>Citizen Comment:</h6>
+                        <blockquote class="blockquote mb-0">
+                            <p class="mb-0" th:if="${issue.rating.comment != null and !issue.rating.comment.isEmpty()}" th:text="${issue.rating.comment}"></p>
+                            <p class="mb-0 fst-italic" th:if="${issue.rating.comment == null or issue.rating.comment.isEmpty()}">No comment provided.</p>
+                            <footer class="blockquote-footer mt-1" th:text="'Rated by ' + ${issue.citizen.fullName}"></footer>
+                        </blockquote>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-comments me-2"></i>Issue Updates</h5>
+            </div>
+            <div class="card-body">
+                <div th:if="${#lists.isEmpty(updates)}" class="text-center py-3">
+                    <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                    <p class="text-muted">No updates yet</p>
+                </div>
+                <div th:unless="${#lists.isEmpty(updates)}" class="timeline">
+                    <div th:each="update : ${updates}" class="timeline-item mb-3">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span>
+                                    <strong th:text="${update.user.fullName}"></strong> 
+                                    <span class="text-muted">(</span>
+                                    <span th:text="${update.user.role.replace('ROLE_', '')}"></span>
+                                    <span class="text-muted">)</span>
+                                </span>
+                                <small class="text-muted" th:text="${#temporals.format(update.createdAt, 'MMM dd, yyyy HH:mm')}"></small>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text" th:text="${update.comment}"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div sec:authorize="hasRole('ADMIN')" th:if="${issue.status != 'RESOLVED'}" class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Add Update & Change Status</h5>
+            </div>
+            <div class="card-body">
+                <form th:action="@{/issues/{issueId}/update(issueId=${issue.id})}" method="post">
+                    
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Set New Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option th:value="${issue.status}" th:text="'Current: ' + ${issue.status}" selected></option>
+                            <option th:if="${issue.status != 'NEW'}" value="NEW">NEW</option>
+                            <option th:if="${issue.status != 'IN_PROGRESS'}" value="IN_PROGRESS">IN_PROGRESS</option>
+                            <option th:if="${issue.status != 'RESOLVED'}" value="RESOLVED">RESOLVED</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="adminComment" class="form-label">Update Comment</label>
+                        <textarea class="form-control" id="adminComment" name="comment" rows="3" required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-1"></i>Submit Update
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
