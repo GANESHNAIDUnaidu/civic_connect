@@ -20,6 +20,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
+import com.example.civic_connect.service.SentimentAnalysisService;
 
 @Controller
 @RequestMapping("/dashboard")
@@ -28,11 +29,13 @@ public class DashboardController {
     private final IssueService issueService;
     private final UserService userService;
     private final RatingService ratingService;
+    private final SentimentAnalysisService sentimentService;
 
-    public DashboardController(IssueService issueService, UserService userService, RatingService ratingService) {
+    public DashboardController(IssueService issueService, UserService userService, RatingService ratingService,SentimentAnalysisService sentimentService) {
         this.issueService = issueService;
         this.userService = userService;
         this.ratingService = ratingService;
+        this.sentimentService = sentimentService;
     }
 
     @GetMapping("/my-dashboard")
@@ -97,37 +100,49 @@ public class DashboardController {
 
         String username = auth.getName();
         User citizen = userService.findByUsername(username)
-                 // --- SYNTAX FIX ---
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
         Issue issue = issueService.getIssueById(issueId);
         if (issue == null) {
-             // --- SYNTAX FIX ---
             throw new NoSuchElementException("Issue not found with id: " + issueId);
         }
 
+        // --- (All your validation logic is the same) ---
         if (!"RESOLVED".equals(issue.getStatus())) {
             redirectAttributes.addFlashAttribute("error", "Issue must be resolved before rating!");
             return "redirect:/dashboard/my-dashboard";
         }
-
         if (ratingService.existsByIssue(issue)) {
             redirectAttributes.addFlashAttribute("error", "Issue already rated!");
             return "redirect:/dashboard/my-dashboard";
         }
-
         if (rating < 1 || rating > 5) {
             redirectAttributes.addFlashAttribute("error", "Rating must be between 1 and 5!");
             return "redirect:/dashboard/my-dashboard";
         }
 
+        // Save the rating
         ServiceRating serviceRating = new ServiceRating();
         serviceRating.setRating(rating);
         serviceRating.setComment(comment);
         serviceRating.setIssue(issue);
         serviceRating.setCitizen(citizen);
-
         ratingService.saveRating(serviceRating);
+        
+        // --- THIS IS THE NEW LOGIC ---
+        // 5. Analyze and save the sentiment
+        if (comment != null && !comment.trim().isEmpty()) {
+            try {
+                // Call the API
+                String sentiment = sentimentService.analyzeSentiment(comment);
+                // Save the result to the Issue entity
+                issue.setSentiment(sentiment);
+                issueService.saveIssue(issue); // Re-save the issue with the sentiment
+            } catch (Exception e) {
+                // Don't crash the user's request if the API fails
+                System.err.println("Could not analyze sentiment: " + e.getMessage());
+            }
+        }
 
         redirectAttributes.addFlashAttribute("success", "Issue rated successfully!");
         return "redirect:/dashboard/my-dashboard";

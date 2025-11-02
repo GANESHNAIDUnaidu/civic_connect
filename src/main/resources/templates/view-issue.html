@@ -58,6 +58,16 @@
                                    th:text="${issue.latitude + ', ' + issue.longitude}">
                                 </a>
                             </li>
+                            
+                            <li class="list-group-item" th:if="${issue.sentiment != null}">
+                                <strong>Citizen Sentiment:</strong> 
+                                <span th:text="${issue.sentiment}"
+                                      th:classappend="${issue.sentiment == 'POSITIVE' ? 'badge bg-success' : 
+                                                      issue.sentiment == 'NEGATIVE' ? 'badge bg-danger' : 
+                                                      'badge bg-secondary'}">
+                                </span>
+                            </li>
+                            
                         </ul>
                     </div>
                 </div>
